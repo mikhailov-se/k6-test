@@ -1,0 +1,36 @@
+version: '3.4'
+
+services:
+  influxdb:
+      image: influxdb:1.8
+      #    entrypoint: /bin/sh
+      #    user: root
+      ports:
+        - "8086:8086"
+      environment:
+        - INFLUXDB_DB=k6
+        - K6_INFLUXDB_PUSH_INTERVAL=2s
+  
+  k6:
+    image: grafana/k6:latest
+    ports:
+      - "6565:6565"
+    environment:
+          - K6_OUT=influxdb=http://influxdb:8086/k6
+          - K6_INFLUXDB_PUSH_INTERVAL=2s
+    volumes:
+      - ./scripts:/scripts
+    depends_on:
+      - grafana
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    env_file:
+      - ./grafana/config.monitoring
+    depends_on:
+      - influxdb
